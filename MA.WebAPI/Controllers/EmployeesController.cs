@@ -1,11 +1,6 @@
 ﻿using MA.Business;
-using MA.Data;
-using MA.Data.Interfaces;
 using MA.Data.Models;
-using MA.Data.Repositories;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 
 namespace MA.WebAPI.Controllers
 {
@@ -50,7 +45,7 @@ namespace MA.WebAPI.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddEmployee([FromBody] Employee employee)
+        public async Task<IActionResult> AddEmployee([FromForm] Employee employee)
         {
             try
             {
@@ -64,7 +59,7 @@ namespace MA.WebAPI.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateEmployee(int id, [FromBody] Employee employee)
+        public async Task<IActionResult> UpdateEmployee(int id, [FromForm] Employee employee)
         {
             try
             {
@@ -93,19 +88,37 @@ namespace MA.WebAPI.Controllers
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
-        //[HttpPost("DataTable")]
-        //public async Task<IActionResult> GetEmployeesForDataTable([FromForm] IDataTablesRequest request)
-        //{
-        //    try
-        //    {
-        //        var response = await _employeeService.GetEmployeesForDataTable(request);
-        //        return new DataTablesJsonResult(response, true);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return StatusCode(500, $"Internal server error: {ex.Message}");
-        //    }
-        //}
+        [HttpPost("DataTable")]
+        public async Task<IActionResult> GetEmployeeDatatable([FromForm] MyDataTableRequest request)
+        {
+            try
+            {
+                //var draw = Request.Form["draw"].FirstOrDefault();
+                //var start = Request.Form["start"].FirstOrDefault();
+                //var length = Request.Form["length"].FirstOrDefault();
+                //var searchValue = Request.Form["search[value]"].FirstOrDefault();
+                var draw = request.Draw;
+                var start = request.Start;
+                var length = request.Length;
+                var searchValue = request.SearchValue;
+                int pageSize = length != null ? Convert.ToInt32(length) : 0;
+                int skip = start != null ? Convert.ToInt32(start) : 0;
+                int recordsTotal = 0;
+                IEnumerable<dynamic> result = _employeeService.GetAllEmployees().Result;
+                if (!string.IsNullOrEmpty(searchValue))
+                {
+                    result = result.Where(e => e.firstname.Contains(searchValue) || e.lastname.Contains(searchValue) || e.email.Contains(searchValue));
+                }
+                recordsTotal = result.Count();
+                var data = result.Skip(skip).Take(pageSize).ToList();
+                var jsonData = new { draw = draw, recordsFiltered = recordsTotal, recordsTotal = recordsTotal, data = data };
+                return Ok(jsonData);
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
     }
 
 }

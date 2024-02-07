@@ -13,6 +13,15 @@ builder.Services
     .AddDbContext<DataContext>(options =>
         options.UseSqlServer(connectionString),
         ServiceLifetime.Scoped);
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("ReactPolicy", builder =>
+    {
+        builder.WithOrigins("http://localhost:3000") // Replace with your React app's URL
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -32,7 +41,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
-
+app.UseCors("ReactPolicy");
 app.MapControllers();
 
 app.Run();
